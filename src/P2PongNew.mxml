@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					 xmlns:s="library://ns.adobe.com/flex/spark">
+	
+	<fx:Library>
+		<fx:Definition name="BallRenderer">
+			<s:Ellipse width="50" height="50">
+				<s:fill>
+					<s:RadialGradient focalPointRatio=".6" rotation="225">
+						<s:GradientEntry color="#0000ff" ratio=".1"/>
+						<s:GradientEntry color="#000077" ratio=".9"/>
+						<s:GradientEntry color="#000000" ratio="1"/>
+					</s:RadialGradient>
+				</s:fill>
+			</s:Ellipse>
+		</fx:Definition>
+	</fx:Library>
+	
+	<fx:Script>
+		<![CDATA[
+		private var netGroup:NetGroup;
+		private var draggingPaddle:Boolean;
+		private var lastStageY:Number;
+
+		private var connected:Boolean = false;
+			
+		private var localNc:NetConnection;
+		
+		[Bindable]
+		private var game:Game = new Game();
+		
+		
+		/*
+			
+			
+		private function checkGameStart():void
+		{
+			if (leftHasJoined && rightHasJoined)
+			{
+				startNewGameButton.visible = false;
+				paddle.visible = true;
+				
+				if (playingLeft)
+				{
+					ballX = 50;
+					ballY = (height / 2) - (ball.height / 2);
+					
+					var ballAngle:Number = (Math.random() * -90) + 45;
+					//trace("ballAngle " + ballAngle);
+					ballXVelocity = Math.abs(Math.cos(ballAngle * Math.PI/180) * BALL_SPEED);
+					//trace("ballXVelocity " + ballXVelocity);
+					ballYVelocity = (Math.sin(ballAngle * Math.PI/180) * BALL_SPEED);
+					//trace("ballYVelocity " + ballYVelocity);
+					
+					sendPaddleBallBounce();
+					
+					paddle.right = null;
+					paddle.left = 10;
+				}
+				else if (playingRight)
+				{
+					paddle.right = 10;
+					paddle.left = null;
+				}
+				
+				paddle.y = (this.height / 2) - (paddle.height / 2);
+			}
+		}
+			
+		private function selectPlayer():void
+		{
+			var e:P2PongEvent = new P2PongEvent();
+			
+			if (playingLeft)
+			{
+				leftHasJoined = true;
+				e.event = LEFT_JOINED;
+			}
+			else if (playingRight)
+			{
+				rightHasJoined = true;
+				e.event = RIGHT_JOINED;
+			}
+
+			netGroup.sendToAllNeighbors(e);
+			
+			checkGameStart();
+		}
+			
+			protected function netStatus(event:NetStatusEvent):void{
+				
+				switch(event.info.code){
+					case "NetConnection.Connect.Success":
+						setupGroup();
+						break;
+					
+					case "NetGroup.Connect.Success":
+						connected = true;
+						break;
+					
+					case "NetConnection.Connect.Closed":
+						connected = false;
+						break;
+					
+					case "NetGroup.SendTo.Notify":
+						var e:P2PongEvent = event.info.message as P2PongEvent;
+						switch(e.event)
+						{
+							case LEFT_JOINED:
+							{
+								leftHasJoined = true;
+								checkGameStart();
+								break;
+							}
+							case RIGHT_JOINED:
+							{
+								rightHasJoined = true;
+								checkGameStart();
+								break;
+							}
+							case BALL_BOUNCED:
+							{
+								ballX = e.data.ballX;
+								ballY = e.data.ballY;
+								ballXVelocity = e.data.ballXVelocity;
+								ballYVelocity = e.data.ballYVelocity;
+								
+								if (((ballXVelocity == 0) && (ballYVelocity == 0)) && playingLeft)
+								{
+									startNewGameButton.visible = true;
+								}
+							}
+						}
+						break;
+				}
+			}
+
+			private function setupGroup():void
+			{
+				var groupspec:GroupSpecifier = new GroupSpecifier("p2pong");
+				groupspec.ipMulticastMemberUpdatesEnabled = true;
+				groupspec.multicastEnabled = true;
+				groupspec.routingEnabled = true;
+				groupspec.postingEnabled = true;
+				groupspec.addIPMulticastAddress("239.254.254.1:30303");
+				
+				netGroup = new NetGroup(localNc, groupspec.groupspecWithAuthorizations());
+				netGroup.addEventListener(NetStatusEvent.NET_STATUS, netStatus);
+			}
+			
+			private function sendPaddleBallBounce():void
+			{
+				var e:P2PongEvent = new P2PongEvent();
+				e.event = BALL_BOUNCED;
+				e.data = {ballX: ballX, ballY: ballY, ballXVelocity: ballXVelocity, ballYVelocity: ballYVelocity};
+				netGroup.sendToAllNeighbors(e);
+			}
+			*/
+		]]>
+	</fx:Script>
+	
+	<s:applicationComplete>
+		
+		var player:Player = new Player();
+		player.index = 0;
+		player.name = "Player 1";
+		player.paddle = new Paddle();
+		
+		game.players.addItem(player);
+	</s:applicationComplete>
+	
+	<!--<s:applicationComplete>
+		stage.setAspectRatio(StageAspectRatio.PORTRAIT);
+		
+		localNc = new NetConnection();
+		localNc.addEventListener(NetStatusEvent.NET_STATUS, netStatus);
+		localNc.connect("rtmfp:");
+	</s:applicationComplete>
+	
+	<s:enterFrame>
+		<![CDATA[
+		if ((ballXVelocity != 0) || (ballYVelocity != 0))
+		{
+		
+			ballX += ballXVelocity;
+			ballY += ballYVelocity;
+			
+			// check top and bottom bound
+			if ((ballY < 0) || (ballY > (height - ball.height)))
+			{
+				ballYVelocity *= -1;
+				ballY += ballYVelocity;
+			}
+
+			
+			if (playingRight)
+			{
+				// check right paddle hit
+				if (((ballY + 25) < (paddle.y + paddle.height)) && ((ballY + 25) > paddle.y) && ((ballX + ball.width - width) >= paddle.x))
+				{
+					ballXVelocity *= -1;
+					ballX += ballXVelocity;
+		
+					// send message to others about the change in velocity
+					sendPaddleBallBounce();
+				}
+		
+				// check right paddle miss
+				if ((ballX + ball.width - width) >= width)
+				{
+					ballXVelocity = 0;
+					ballYVelocity = 0;
+					ballX = ball.x = -50;
+					ballY = ball.y = -50;
+		
+					sendPaddleBallBounce();
+				}
+			}
+		
+			if (playingLeft)
+			{
+				// check left paddle hit
+				if (((ballY + 25) < (paddle.y + paddle.height)) && ((ballY + 25) > paddle.y) && (ballX <= (paddle.x + paddle.width)))
+				{
+					ballXVelocity *= -1;
+					ballX += ballXVelocity;
+					
+					// send message to others about the change in velocity
+					sendPaddleBallBounce();
+				}
+		
+				// check left paddle miss
+				if (ballX <= 0)
+				{
+					ballXVelocity = 0;
+					ballYVelocity = 0;
+					ballX = ball.x = -50;
+					ballY = ball.y = -50;
+					
+					sendPaddleBallBounce();
+					
+					startNewGameButton.visible = true;
+				}
+			}
+			
+			if (playingLeft)
+			{
+				ball.x = ballX;
+				ball.y = ballY;
+			}
+			else if (playingRight)
+			{
+				ball.x = ballX - width;
+				ball.y = ballY;
+			}
+		}
+		]]>
+	</s:enterFrame>-->
+	
+	<s:states>
+		<s:State name="notStarted"/>
+		<s:State name="started"/>
+		<s:State name="ended"/>
+	</s:states>
+	
+	<s:Group includeIn="notStarted" width="100%" top="10">
+		
+		<s:layout>
+			<s:VerticalLayout horizontalAlign="center"/>
+		</s:layout>
+		
+		<s:Label text="{game.players.length} Players"/>
+		
+		<s:Button label="Start!" enabled="{game.players.length &gt; 1}"/>		
+	</s:Group>
+	
+	
+	
+	<s:Group width="100%" includeIn="started">
+		
+	</s:Group>
+	
+	
+	<s:Group width="100%" bottom="0">
+		<s:Rect width="100%" height="100%">
+			<s:fill>
+				<s:SolidColor color="#aaaaaa"/>
+			</s:fill>
+		</s:Rect>
+		<s:Label text="P2Pong v1.0" verticalCenter="0" left="4"/>
+		<s:Button label="End Game" right="4" top="4" bottom="4"/>
+	</s:Group>
+		
+	<!--
+	<s:Group id="paddle" visible="false">
+		<s:Rect width="40" height="150" >
+			<s:fill>
+				<s:SolidColor color="#444444"/>
+			</s:fill>
+		</s:Rect>
+		<s:mouseDown>
+			draggingPaddle = true;
+			lastStageY = event.stageY;
+		</s:mouseDown>
+	</s:Group>
+	
+	<s:mouseMove>
+		<![CDATA[
+		if (draggingPaddle)
+		{
+			var delta:Number = (event.stageY - lastStageY);
+			lastStageY = event.stageY;
+			paddle.y += delta;
+		
+			// top bound check
+			if (paddle.y < 0)
+			{
+				paddle.y = 0;
+			}
+		
+			// bottom bound check
+			if (paddle.y > (this.height - paddle.height))
+			{
+				paddle.y = (this.height - paddle.height);
+			}
+		}
+		]]>
+	</s:mouseMove>
+	
+	<s:mouseUp>
+		draggingPaddle = false;
+	</s:mouseUp>-->
+	
+</s:Application>
